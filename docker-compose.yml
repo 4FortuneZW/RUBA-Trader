@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ruba-trader-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ruba_trader
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ruba-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: ruba-trader-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ruba-network
+
+  # Discord Bot
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ruba-trader-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - ruba-network
+    volumes:
+      - ./logs:/app/logs
+      - ./prisma:/app/prisma
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  ruba-network:
+    driver: bridge

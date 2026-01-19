@@ -1,0 +1,171 @@
+name: Discord Bot Auto Sync
+
+on:
+  push:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:       # Allow manual trigger
+
+jobs:
+  check-for-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      config_changed: ${{ steps.check-config.outputs.config_changed }}
+      message: ${{ steps.get-commit-message.outputs.message }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get commit message
+        id: get-commit-message
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            echo "message=${{ github.event.head_commit.message }}" >> $GITHUB_OUTPUT
+          else
+            echo "message=Scheduled sync" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for configuration changes
+        id: check-config
+        run: |
+          echo "Checking for configuration changes..."
+          if git diff HEAD~1 HEAD --name-only 2>/dev/null | grep -q -E '\.(js|json|env|yml|yaml)$'; then
+            echo "config_changed=true" >> $GITHUB_OUTPUT
+            echo "📝 Configuration files changed"
+          else
+            echo "config_changed=false" >> $GITHUB_OUTPUT
+            echo "✅ No configuration changes detected"
+          fi
+        continue-on-error: true
+
+  run-tests:
+    needs: check-for-changes
+    if: needs.check-for-changes.outputs.config_changed == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Run tests
+        run: npm test
+        continue-on-error: true
+
+      - name: Generate coverage report
+        if: success()
+        run: npm run test:coverage
+
+      - name: Upload coverage
+        if: success()
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/lcov.info
+
+  notify-discord:
+    needs: [check-for-changes, run-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Determine status
+        id: status
+        run: |
+          if [ "${{ needs.run-tests.result }}" == "success" ]; then
+            echo "status=✅ Success" >> $GITHUB_OUTPUT
+            echo "color=65280" >> $GITHUB_OUTPUT
+          elif [ "${{ needs.run-tests.result }}" == "failure" ]; then
+            echo "status=❌ Failed" >> $GITHUB_OUTPUT
+            echo "color=16711680" >> $GITHUB_OUTPUT
+          else
+            echo "status=⚠️ Skipped" >> $GITHUB_OUTPUT
+            echo "color=16776960" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Discord notification
+        if: env.DISCORD_WEBHOOK != ''
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -X POST "$DISCORD_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "🤖 RUBA Trader GitHub Sync",
+                "color": ${{ steps.status.outputs.color }},
+                "fields": [
+                  {
+                    "name": "Status",
+                    "value": "${{ steps.status.outputs.status }}",
+                    "inline": true
+                  },
+                  {
+                    "name": "Branch",
+                    "value": "${{ github.ref_name }}",
+                    "inline": true
+                  },
+                  {
+                    "name": "Author",
+                    "value": "${{ github.actor }}",
+                    "inline": true
+                  },
+                  {
+                    "name": "Trigger",
+                    "value": "${{ github.event_name }}",
+                    "inline": true
+                  },
+                  {
+                    "name": "Config Changed",
+                    "value": "${{ needs.check-for-changes.outputs.config_changed }}",
+                    "inline": true
+                  },
+                  {
+                    "name": "Commit",
+                    "value": "${{ needs.check-for-changes.outputs.message }}",
+                    "inline": false
+                  }
+                ],
+                "timestamp": "${{ github.event.head_commit.timestamp }}",
+                "url": "${{ github.event.head_commit.url }}"
+              }]
+            }'
+
+  deploy:
+    needs: [check-for-changes, run-tests]
+    if: needs.check-for-changes.outputs.config_changed == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to production
+        run: |
+          echo "🚀 Deploying to production..."
+          echo "Configuration changed: ${{ needs.check-for-changes.outputs.message }}"
+          # Add your deployment commands here
+          # Example: SSH into server and pull changes
+          # ssh user@server "cd /path/to/app && git pull && npm install && pm2 restart ruba-trader"
+
+      - name: Health check
+        run: |
+          echo "🔍 Running health checks..."
+          # Add health check commands
+          # curl -f https://your-bot-url.com/health || exit 1
