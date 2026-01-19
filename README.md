@@ -1,10 +1,10 @@
-# Pajeru Tutor
+# RUBA Trader
 
-Welcome to the Pajeru Tutor project.
+Welcome to the RUBA Trader project.
 
 ## Project Overview
 
-This project is dedicated to providing educational tutoring services and resources.
+This project is a cryptocurrency trading bot that helps automate trading strategies and manage crypto portfolios.
 
 ## Getting Started
 

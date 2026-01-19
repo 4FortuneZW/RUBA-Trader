@@ -1,0 +1,64 @@
+name: Automatic Pull from Remote
+
+on:
+  schedule:
+    # Run every hour to check for remote changes
+    - cron: '0 * * * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual trigger'
+        required: false
+        default: 'Manual sync request'
+        type: string
+
+jobs:
+  auto-pull:
+    name: Auto Pull Latest Changes
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull latest changes from remote
+        run: |
+          echo "Pulling latest changes from remote..."
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          
+          # Fetch all remote branches
+          git fetch --all
+          
+          # Check if there are changes to pull
+          LOCAL=$(git rev-parse HEAD)
+          REMOTE=$(git rev-parse @{u})
+          
+          if [ "$LOCAL" != "$REMOTE" ]; then
+            echo "Changes detected on remote. Pulling..."
+            git pull origin main --no-edit
+            
+            echo "Changes pulled successfully:"
+            git log --oneline -10
+          else
+            echo "No changes on remote. Repository is up to date."
+          fi
+
+      - name: Notify on successful pull
+        if: success()
+        run: |
+          echo "✅ Auto pull completed successfully"
+          echo "Timestamp: $(date)"
+          echo "Commit: $(git rev-parse --short HEAD)"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Auto pull failed"
+          echo "Please check the logs for details"
+          exit 1
