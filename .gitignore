@@ -1,0 +1,12 @@
+# Common development files
+node_modules/
+dist/
+build/
+*.log
+.DS_Store
+Thumbs.db
+.env
+.env.local
+*.swp
+*.swo
+*~
