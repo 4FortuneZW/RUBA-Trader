@@ -1,0 +1,61 @@
+name: Automated Sync
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Configure Git
+      run: |
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "actions@github.com"
+    
+    - name: Sync with remote
+      run: |
+        echo "Syncing with remote repository..."
+        
+        # Fetch all branches
+        git fetch --all
+        
+        # Pull latest changes from main
+        git pull origin main
+        
+        # Check if there are any local changes
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Found uncommitted changes"
+          
+          # Add all changes
+          git add .
+          
+          # Commit changes with timestamp
+          git commit -m "chore: auto-sync $(date +'%Y-%m-%d %H:%M:%S')"
+          
+          # Push to remote
+          git push origin main
+          
+          echo "Changes synced successfully"
+        else
+          echo "No changes to sync"
+        fi
+    
+    - name: Create sync report
+      run: |
+        echo "Sync completed at $(date)" > sync-report.txt
+        git log -1 --pretty=format:"%H - %an, %ar : %s" >> sync-report.txt
+    
+    - name: Upload sync report
+      uses: actions/upload-artifact@v4
+      with:
+        name: sync-report
+        path: sync-report.txt

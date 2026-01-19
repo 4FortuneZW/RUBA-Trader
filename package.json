@@ -1,0 +1,78 @@
+{
+  "name": "ruba-trader-discord-bot",
+  "version": "1.0.0",
+  "description": "A Discord bot for cryptocurrency trading and portfolio management",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "deploy-commands": "ts-node scripts/deploy-commands.ts",
+    "sync": "bash scripts/auto-sync.sh",
+    "sync:verbose": "bash scripts/auto-sync.sh -v",
+    "sync:force": "bash scripts/auto-sync.sh -f",
+    "sync:dry-run": "bash scripts/auto-sync.sh -n"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "crypto",
+    "trading",
+    "cryptocurrency",
+    "portfolio",
+    "discord.js"
+  ],
+  "author": "RUBA Trader Team",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.1",
+    "axios": "^1.6.7",
+    "winston": "^3.11.0",
+    "node-cron": "^3.0.3",
+    "prisma": "^5.9.1",
+    "@prisma/client": "^5.9.1",
+    "ioredis": "^5.3.2",
+    "decimal.js": "^10.4.3",
+    "moment": "^2.30.1",
+    "chart.js": "^4.4.1",
+    "canvas": "^2.11.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.16",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "prettier": "^3.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.11",
+    "ts-jest": "^29.1.2",
+    "@types/node-cron": "^3.0.11",
+    "husky": "^9.0.10",
+    "lint-staged": "^15.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/4FortuneZW/RUBA-Trader.git"
+  },
+  "bugs": {
+    "url": "https://github.com/4FortuneZW/RUBA-Trader/issues"
+  },
+  "homepage": "https://github.com/4FortuneZW/RUBA-Trader#readme"
+}
